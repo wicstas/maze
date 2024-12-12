@@ -18,32 +18,28 @@ std::vector<Vertex> path_finding_astar(Vertex start, Vertex goal, auto&& for_eac
   };
   auto visited = std::unordered_set<Vertex, Hash>{start};
   auto best_predecessor = std::unordered_map<Vertex, Vertex, Hash>();
-  auto weight_so_far = std::unordered_map<Vertex, WeightType, Hash>();
 
   auto cmp = [&](Link a, Link b) {
-    return weight_so_far.at(a.from) + a.w + heuristic(a.to, goal) >
-           weight_so_far.at(b.from) + b.w + heuristic(b.to, goal);
+    return a.w + heuristic(a.to, goal) > b.w + heuristic(b.to, goal);
   };
   auto queue = std::priority_queue<Link, std::vector<Link>, decltype(cmp)>(cmp);
 
-  weight_so_far[start] = WeightType(0);
   for_each_neighbors(start,
-                     [&](Vertex neighbor, WeightType w) { queue.push({start, neighbor, w}); });
+                     [&](Vertex neighbor, WeightType w) { queue.push({start, neighbor, 0 + w}); });
 
   while (queue.size() != 0) {
     auto [current, next, w] = queue.top();
-    if (visited.contains(next)) {
+    if (!visited.insert(next).second) {
       queue.pop();
       continue;
     }
-    weight_so_far[next] = weight_so_far[current] + w;
     best_predecessor[next] = current;
-    visited.insert(next);
     if (next == goal) break;
     queue.pop();
 
-    for_each_neighbors(next,
-                       [&](Vertex neighbor, WeightType w) { queue.push({next, neighbor, w}); });
+    for_each_neighbors(next, [&](Vertex neighbor, WeightType lnik_w) {
+      queue.push({next, neighbor, w + lnik_w});
+    });
   }
 
   if (!best_predecessor.contains(goal)) return {};
